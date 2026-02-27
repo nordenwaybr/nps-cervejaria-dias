@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Validar Cupom — Cervejaria Dias</title>
+<style>
+  :root {
+    --green:     #1E5C2E;
+    --green-mid: #2D7A40;
+    --green-lt:  #EAF4EC;
+    --gold:      #B8962A;
+    --gold-lt:   #FBF5E6;
+    --dark:      #1A1A1A;
+    --gray:      #6B7280;
+    --gray-lt:   #F3F4F6;
+    --white:     #FFFFFF;
+    --red:       #DC2626;
+    --red-lt:    #FEE2E2;
+    --line:      #E5E7EB;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0F3D1A;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 16px 40px;
+  }
+
+  .header {
+    width: 100%;
+    max-width: 440px;
+    background: var(--green);
+    border-radius: 0 0 16px 16px;
+    padding: 20px 20px 16px;
+    text-align: center;
+    border-bottom: 3px solid var(--gold);
+    margin-bottom: 24px;
+  }
+  .header h1 { font-size: 17px; font-weight: 700; color: var(--white); letter-spacing: 1px; }
+  .header p  { font-size: 12px; color: var(--gold); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+
+  .card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  h2 { font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+  .sub { font-size: 13px; color: var(--gray); margin-bottom: 20px; line-height: 1.5; }
+
+  input {
+    width: 100%;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 14px;
+    font-size: 15px;
+    color: var(--dark);
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    margin-bottom: 12px;
+  }
+  input:focus { border-color: var(--green); }
+  input.code-input {
+    font-family: 'Courier New', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .btn {
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-green { background: var(--green); color: var(--white); }
+  .btn-green:hover { background: var(--green-mid); }
+  .btn-red   { background: var(--red);   color: var(--white); margin-top: 10px; }
+  .btn-gray  { background: var(--gray-lt); color: var(--gray); margin-top: 10px; }
+
+  .err-msg {
+    background: var(--red-lt);
+    border: 1.5px solid var(--red);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #991B1B;
+    text-align: center;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .err-msg.show { display: block; }
+
+  /* ── Result card ── */
+  .result-card {
+    border: 2px solid;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .result-card.valid   { border-color: var(--green); }
+  .result-card.used    { border-color: var(--gray);  }
+  .result-card.expired { border-color: var(--red);   }
+
+  .result-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .result-card.valid   .result-header { background: var(--green-lt); }
+  .result-card.used    .result-header { background: var(--gray-lt);  }
+  .result-card.expired .result-header { background: var(--red-lt);   }
+
+  .result-icon { font-size: 24px; }
+  .result-status {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .result-card.valid   .result-status { color: var(--green); }
+  .result-card.used    .result-status { color: var(--gray);  }
+  .result-card.expired .result-status { color: var(--red);   }
+  .result-sub { font-size: 12px; color: var(--gray); margin-top: 2px; }
+
+  .result-body { padding: 16px; background: var(--white); }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    gap: 12px;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-label { font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0; }
+  .result-value { font-size: 13px; font-weight: 600; color: var(--dark); text-align: right; }
+  .result-value.code { font-family: 'Courier New', monospace; font-size: 15px; color: var(--green); letter-spacing: 2px; }
+
+  .spinner-wrap { text-align: center; padding: 24px 0; display: none; }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 4px solid var(--line);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .logout-btn {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 6px;
+    font-family: inherit;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .logout-btn:hover { color: var(--gold); }
+
+  .history-section { margin-top: 28px; }
+  .history-title {
+    font-size: 11px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+  }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-code { font-family: 'Courier New', monospace; font-weight: 700; color: var(--green); }
+  .history-status { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+  .hs-used    { background: var(--gray-lt); color: var(--gray); }
+  .hs-valid   { background: var(--green-lt); color: var(--green); }
+  .hs-expired { background: var(--red-lt); color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="font-size:32px; margin-bottom:6px;">🍺</div>
+  <h1>Cervejaria Dias</h1>
+  <p>Painel de Validação de Cupons</p>
+  <button class="logout-btn" id="logout-btn" onclick="logout()" style="display:none;">Sair ↩</button>
+</div>
+
+<div class="card">
+
+  <!-- ── TELA LOGIN ── -->
+  <div class="screen active" id="screen-login">
+    <h2>🔒 Acesso Restrito</h2>
+    <div class="sub">Digite a senha para acessar o painel de validação.</div>
+    <div class="err-msg" id="err-login">Senha incorreta. Tente novamente.</div>
+    <input type="password" id="senha-input" placeholder="Senha de acesso"
+      onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="btn btn-green" onclick="doLogin()">Entrar →</button>
+  </div>
+
+  <!-- ── TELA VALIDAÇÃO ── -->
+  <div class="screen" id="screen-validar">
+    <h2>🎟️ Validar Cupom</h2>
+    <div class="sub">Digite o código do cupom apresentado pelo cliente.</div>
+    <div class="err-msg" id="err-validar">Cupom não encontrado. Verifique o código.</div>
+
+    <input type="text" id="codigo-input" class="code-input"
+      placeholder="DIAS000000" maxlength="10"
+      oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+      onkeydown="if(event.key==='Enter') buscarCupom()">
+
+    <div class="spinner-wrap" id="spinner-busca">
+      <div class="spinner"></div>
+      <p style="color:var(--gray);font-size:13px;">Consultando...</p>
+    </div>
+
+    <button class="btn btn-green" id="btn-buscar" onclick="buscarCupom()">Consultar Cupom 🔍</button>
+
+    <!-- Resultado -->
+    <div id="resultado" style="margin-top:20px; display:none;">
+      <div class="result-card" id="result-card">
+        <div class="result-header">
+          <div class="result-icon" id="result-icon"></div>
+          <div>
+            <div class="result-status" id="result-status"></div>
+            <div class="result-sub" id="result-sub"></div>
+          </div>
+        </div>
+        <div class="result-body" id="result-body"></div>
+      </div>
+      <button class="btn btn-red" id="btn-usar" onclick="marcarUsado()" style="display:none;">
+        ✅ Marcar como USADO
+      </button>
+      <button class="btn btn-gray" onclick="resetBusca()">🔄 Consultar outro cupom</button>
+    </div>
+
+    <!-- Histórico recente -->
+    <div class="history-section" id="historico-section" style="display:none;">
+      <div class="history-title">Últimas validações desta sessão</div>
+      <div id="historico-lista"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIGURAÇÃO
+// ══════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbQcl-jZxR-tMGXYV9Bbwh7ghW-Y0PT8RVGYX1gAWB2dHHioqWOqoCUsBWPgg3L7E42w/exec';
+
+// Senha de acesso ao painel (altere aqui)
+const SENHA = 'dias2024';
+// ══════════════════════════════════════════
+
+let cupomAtual = null;
+let historico  = [];
+
+// ── Login ──
+function doLogin() {
+  const s = document.getElementById('senha-input').value;
+  if (s === SENHA) {
+    document.getElementById('screen-login').classList.remove('active');
+    document.getElementById('screen-validar').classList.add('active');
+    document.getElementById('logout-btn').style.display = 'block';
+    document.getElementById('err-login').classList.remove('show');
+    sessionStorage.setItem('nps_admin', '1');
+  } else {
+    document.getElementById('err-login').classList.add('show');
+    document.getElementById('senha-input').value = '';
+    document.getElementById('senha-input').focus();
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('nps_admin');
+  location.reload();
+}
+
+// Auto-login se já estava logado nesta sessão
+if (sessionStorage.getItem('nps_admin')) {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-validar').classList.add('active');
+  document.getElementById('logout-btn').style.display = 'block';
+}
+
+// ── Buscar cupom ──
+async function buscarCupom() {
+  const codigo = document.getElementById('codigo-input').value.trim().toUpperCase();
+  if (codigo.length < 6) {
+    document.getElementById('err-validar').textContent = 'Digite o código completo do cupom.';
+    document.getElementById('err-validar').classList.add('show');
+    return;
+  }
+
+  document.getElementById('err-validar').classList.remove('show');
+  document.getElementById('resultado').style.display = 'none';
+  document.getElementById('btn-buscar').style.display = 'none';
+  document.getElementById('spinner-busca').style.display = 'block';
+
+  try {
+    const params = new URLSearchParams({ action: 'validate', codigo });
+    const resp = await fetch(SCRIPT_URL + '?' + params.toString());
+    const json = await resp.json();
+    mostrarResultado(json, codigo);
+  } catch(e) {
+    document.getElementById('err-validar').textContent = 'Erro de conexão. Tente novamente.';
+    document.getElementById('err-validar').classList.add('show');
+    document.getElementById('btn-buscar').style.display = 'block';
+  } finally {
+    document.getElementById('spinner-busca').style.display = 'none';
+  }
+}
+
+// ── Mostrar resultado ──
+function mostrarResultado(json, codigo) {
+  cupomAtual = json;
+  cupomAtual.codigo = codigo;
+
+  const card   = document.getElementById('result-card');
+  const icon   = document.getElementById('result-icon');
+  const status = document.getElementById('result-status');
+  const sub    = document.getElementById('result-sub');
+  const body   = document.getElementById('result-body');
+  const btnUsar = document.getElementById('btn-usar');
+
+  card.className = 'result-card';
+
+  if (json.status === 'not_found') {
+    card.classList.add('expired');
+    icon.textContent = '❌';
+    status.textContent = 'Cupom não encontrado';
+    sub.textContent = 'Verifique se o código foi digitado corretamente.';
+    body.innerHTML = `<div class="result-row"><span class="result-label">Código</span><span class="result-value code">${codigo}</span></div>`;
+    btnUsar.style.display = 'none';
+
+  } else if (json.status === 'used') {
+    card.classList.add('used');
+    icon.textContent = '🚫';
+    status.textContent = 'Cupom já utilizado';
+    sub.textContent = `Usado em ${json.data_uso || '—'}`;
+    body.innerHTML = buildRows(json);
+    btnUsar.style.display = 'none';
+    adicionarHistorico(codigo, 'used');
+
+  } else if (json.status === 'expired') {
+    card.classList.add('expired');
+    icon.textContent = '⏰';
+    status.textContent = 'Cupom expirado';
+    sub.textContent = `Venceu em ${json.validade || '—'}`;
+    body.innerHTML = buildRows(json);
+    btnUsar.style.display = 'none';
+    adicionarHistorico(codigo, 'expired');
+
+  } else if (json.status === 'valid') {
+    card.classList.add('valid');
+    icon.textContent = '✅';
+    status.textContent = 'Cupom VÁLIDO!';
+    sub.textContent = `Válido até ${json.validade || '—'}`;
+    body.innerHTML = buildRows(json);
+    btnUsar.style.display = 'block';
+  }
+
+  document.getElementById('resultado').style.display = 'block';
+  document.getElementById('btn-buscar').style.display = 'block';
+}
+
+function buildRows(json) {
+  const rows = [
+    ['Código',   `<span class="result-value code">${json.codigo || cupomAtual.codigo}</span>`],
+    ['Cliente',  json.nome     || '—'],
+    ['WhatsApp', json.contato  || '—'],
+    ['Garçom',   json.garcom   || '—'],
+    ['NPS',      json.nps !== undefined ? `${json.nps}/10 (${json.nps_cat || ''})` : '—'],
+    ['Validade', json.validade || '—'],
+  ];
+  if (json.data_uso) rows.push(['Usado em', json.data_uso]);
+  return rows.map(([label, value]) =>
+    `<div class="result-row">
+      <span class="result-label">${label}</span>
+      <span class="result-value">${value}</span>
+    </div>`
+  ).join('');
+}
+
+// ── Marcar como usado ──
+async function marcarUsado() {
+  if (!cupomAtual || cupomAtual.status !== 'valid') return;
+
+  document.getElementById('btn-usar').disabled = true;
+  document.getElementById('btn-usar').textContent = 'Registrando...';
+
+  try {
+    const agora = new Date().toLocaleString('pt-BR');
+    const params = new URLSearchParams({
+      action: 'use_coupon',
+      codigo: cupomAtual.codigo,
+      data_uso: agora,
+    });
+    const resp = await fetch(SCRIPT_URL + '?' + params.toString());
+    const json = await resp.json();
+
+    if (json.status === 'ok') {
+      // Update display
+      const card = document.getElementById('result-card');
+      card.className = 'result-card used';
+      document.getElementById('result-icon').textContent = '🚫';
+      document.getElementById('result-status').textContent = 'Cupom marcado como USADO';
+      document.getElementById('result-sub').textContent = `Registrado em ${agora}`;
+      document.getElementById('btn-usar').style.display = 'none';
+      adicionarHistorico(cupomAtual.codigo, 'used');
+      cupomAtual.status = 'used';
+    }
+  } catch(e) {
+    document.getElementById('btn-usar').disabled = false;
+    document.getElementById('btn-usar').textContent = '✅ Marcar como USADO';
+    alert('Erro ao registrar. Verifique a conexão.');
+  }
+}
+
+// ── Reset busca ──
+function resetBusca() {
+  document.getElementById('codigo-input').value = '';
+  document.getElementById('resultado').style.display = 'none';
+  document.getElementById('err-validar').classList.remove('show');
+  cupomAtual = null;
+  document.getElementById('codigo-input').focus();
+}
+
+// ── Histórico da sessão ──
+function adicionarHistorico(codigo, status) {
+  historico.unshift({ codigo, status, hora: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) });
+  if (historico.length > 10) historico.pop();
+  renderHistorico();
+}
+
+function renderHistorico() {
+  if (!historico.length) return;
+  document.getElementById('historico-section').style.display = 'block';
+  const labels = { used: 'Usado', valid: 'Válido', expired: 'Expirado' };
+  const classes = { used: 'hs-used', valid: 'hs-valid', expired: 'hs-expired' };
+  document.getElementById('historico-lista').innerHTML = historico.map(h =>
+    `<div class="history-item">
+      <span class="history-code">${h.codigo}</span>
+      <span>${h.hora}</span>
+      <span class="history-status ${classes[h.status]}">${labels[h.status]}</span>
+    </div>`
+  ).join('');
+}
+
+// Enter no campo de código
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('senha-input').focus();
+});
+</script>
+</body>
+</html>

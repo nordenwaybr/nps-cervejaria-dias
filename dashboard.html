@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard NPS — Cervejaria Dias</title>
+<style>
+  :root {
+    --green:     #1E5C2E;
+    --green-mid: #2D7A40;
+    --green-lt:  #EAF4EC;
+    --gold:      #B8962A;
+    --gold-lt:   #FBF5E6;
+    --dark:      #111827;
+    --gray:      #6B7280;
+    --gray-lt:   #F3F4F6;
+    --line:      #E5E7EB;
+    --white:     #FFFFFF;
+    --red:       #DC2626;
+    --red-lt:    #FEE2E2;
+    --yellow:    #D97706;
+    --yellow-lt: #FEF3C7;
+    --blue:      #1D4ED8;
+    --blue-lt:   #DBEAFE;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #F0F4F1;
+    color: var(--dark);
+    min-height: 100vh;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--green);
+    border-bottom: 3px solid var(--gold);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { font-size: 28px; }
+  .topbar-title h1 { font-size: 16px; font-weight: 700; color: var(--white); letter-spacing: 0.5px; }
+  .topbar-title p  { font-size: 11px; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .refresh-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--white);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { background: rgba(255,255,255,0.2); }
+  .logout-btn {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 1px;
+  }
+  .logout-btn:hover { color: var(--gold); }
+  .last-update { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+  /* ── LOGIN ── */
+  .login-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0F3D1A;
+    padding: 20px;
+  }
+  .login-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 36px 32px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+  .login-card h2 { font-size: 20px; font-weight: 700; margin: 12px 0 4px; }
+  .login-card p  { font-size: 13px; color: var(--gray); margin-bottom: 24px; }
+  .login-card input {
+    width: 100%; border: 2px solid var(--line); border-radius: 10px;
+    padding: 13px 14px; font-size: 15px; outline: none;
+    transition: border-color 0.2s; font-family: inherit; margin-bottom: 12px;
+  }
+  .login-card input:focus { border-color: var(--green); }
+  .login-card button {
+    width: 100%; background: var(--green); color: var(--white);
+    border: none; border-radius: 10px; padding: 14px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: background 0.2s;
+  }
+  .login-card button:hover { background: var(--green-mid); }
+  .err-login { color: var(--red); font-size: 13px; margin-bottom: 10px; display: none; }
+
+  /* ── MAIN ── */
+  .main { padding: 24px; display: none; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-bar select, .filter-bar input {
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--dark);
+    background: var(--white);
+    outline: none;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .filter-bar select:focus, .filter-bar input:focus { border-color: var(--green); }
+  .filter-label { font-size: 12px; color: var(--gray); font-weight: 600; letter-spacing: 0.5px; }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .kpi {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1.5px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+  }
+  .kpi.green::before  { background: var(--green); }
+  .kpi.gold::before   { background: var(--gold); }
+  .kpi.red::before    { background: var(--red); }
+  .kpi.yellow::before { background: var(--yellow); }
+  .kpi.blue::before   { background: var(--blue); }
+
+  .kpi-label { font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .kpi-value { font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .kpi.green  .kpi-value { color: var(--green); }
+  .kpi.gold   .kpi-value { color: var(--gold); }
+  .kpi.red    .kpi-value { color: var(--red); }
+  .kpi.yellow .kpi-value { color: var(--yellow); }
+  .kpi.blue   .kpi-value { color: var(--blue); }
+  .kpi-sub { font-size: 11px; color: var(--gray); }
+
+  /* ── NPS GAUGE ── */
+  .nps-gauge-wrap {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .nps-gauge-title { font-size: 12px; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .nps-score-big { font-size: 56px; font-weight: 800; line-height: 1; }
+  .nps-score-label { font-size: 13px; color: var(--gray); margin-top: 4px; }
+  .nps-bar-wrap { display: flex; gap: 6px; margin: 16px 0 8px; height: 10px; border-radius: 6px; overflow: hidden; }
+  .nps-bar-det  { background: var(--red); border-radius: 6px 0 0 6px; transition: width 0.6s; }
+  .nps-bar-neu  { background: var(--yellow); transition: width 0.6s; }
+  .nps-bar-pro  { background: var(--green); border-radius: 0 6px 6px 0; transition: width 0.6s; flex: 1; }
+  .nps-legend { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray); }
+  .nps-legend span { display: flex; align-items: center; gap: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* ── CHARTS GRID ── */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    padding: 20px;
+  }
+  .chart-card.full { grid-column: 1 / -1; }
+  .chart-title { font-size: 13px; font-weight: 700; color: var(--dark); margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+
+  /* Bar chart */
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; }
+  .bar-label { font-size: 11px; color: var(--gray); min-width: 80px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 22px; background: var(--gray-lt); border-radius: 4px; overflow: hidden; }
+  .bar-fill  { height: 100%; border-radius: 4px; transition: width 0.6s ease; display: flex; align-items: center; padding-left: 8px; }
+  .bar-val   { font-size: 11px; font-weight: 700; color: white; white-space: nowrap; }
+  .bar-count { font-size: 11px; color: var(--gray); min-width: 30px; text-align: right; }
+
+  /* Trend line chart (canvas-based) */
+  canvas { width: 100% !important; }
+
+  /* ── GARCONS TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: var(--green); color: var(--white);
+    font-size: 11px; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase; padding: 10px 12px; text-align: left;
+  }
+  th.r, td.r { text-align: right; }
+  th.c, td.c { text-align: center; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:nth-child(even) td { background: var(--gray-lt); }
+  tr:hover td { background: var(--green-lt); }
+  .nps-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .nps-pro  { background: var(--green-lt); color: var(--green); }
+  .nps-neu  { background: var(--yellow-lt); color: var(--yellow); }
+  .nps-det  { background: var(--red-lt); color: var(--red); }
+  .stars-display { color: var(--gold); font-size: 13px; }
+
+  /* ── RESPONSES TABLE ── */
+  .resp-table td { font-size: 12px; }
+  .comment-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--gray); }
+
+  /* ── LOADING / EMPTY ── */
+  .loading-wrap { text-align: center; padding: 60px 20px; }
+  .spinner { width: 40px; height: 40px; border: 4px solid var(--line); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { text-align: center; padding: 40px; color: var(--gray); font-size: 14px; }
+
+  /* ── SECTION HEADER ── */
+  .section-header { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+  /* tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--white); padding: 4px; border-radius: 10px; border: 1.5px solid var(--line); width: fit-content; }
+  .tab { padding: 8px 16px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--gray); border: none; background: none; font-family: inherit; transition: all 0.2s; }
+  .tab.active { background: var(--green); color: var(--white); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Aniversariantes */
+  .bday-list { display: flex; flex-direction: column; gap: 8px; }
+  .bday-item { background: var(--gold-lt); border: 1.5px solid var(--gold); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .bday-name { font-weight: 700; font-size: 14px; color: var(--dark); }
+  .bday-info { font-size: 12px; color: var(--gray); margin-top: 2px; }
+  .bday-date { font-size: 20px; font-weight: 800; color: var(--gold); font-family: monospace; }
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-card">
+    <div style="font-size:48px;">🍺</div>
+    <h2>Dashboard NPS</h2>
+    <p>Cervejaria Dias — Painel de Análise</p>
+    <div class="err-login" id="err-login">Senha incorreta.</div>
+    <input type="password" id="login-input" placeholder="Senha de acesso"
+      onkeydown="if(event.key==='Enter') doLogin()">
+    <button onclick="doLogin()">Entrar →</button>
+  </div>
+</div>
+
+<!-- ══ TOPBAR ══ -->
+<div class="topbar" id="topbar" style="display:none;">
+  <div class="topbar-left">
+    <div class="topbar-logo">🍺</div>
+    <div class="topbar-title">
+      <h1>Dashboard NPS — Cervejaria Dias</h1>
+      <p>Painel de Análise de Respostas</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="last-update" id="last-update"></div>
+    <button class="refresh-btn" onclick="loadData()">↻ Atualizar</button>
+    <button class="logout-btn" onclick="logout()">Sair ↩</button>
+  </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="main" id="main">
+
+  <!-- LOADING -->
+  <div class="loading-wrap" id="loading">
+    <div class="spinner"></div>
+    <p style="color:var(--gray);font-size:14px;">Carregando dados...</p>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content" style="display:none;">
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <span class="filter-label">Filtrar por:</span>
+      <select id="filter-garcom" onchange="applyFilters()">
+        <option value="">Todos os garçons</option>
+      </select>
+      <select id="filter-periodo" onchange="applyFilters()">
+        <option value="0">Todo o período</option>
+        <option value="30">Últimos 30 dias</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="90">Últimos 90 dias</option>
+      </select>
+      <select id="filter-nps" onchange="applyFilters()">
+        <option value="">Todas as categorias</option>
+        <option value="Promotor">Promotores (9-10)</option>
+        <option value="Neutro">Neutros (7-8)</option>
+        <option value="Detrator">Detratores (0-6)</option>
+      </select>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('visao-geral')">📊 Visão Geral</button>
+      <button class="tab" onclick="showTab('garcons')">👥 Por Garçom</button>
+      <button class="tab" onclick="showTab('respostas')">📋 Respostas</button>
+      <button class="tab" onclick="showTab('aniversariantes')">🎂 Aniversariantes</button>
+    </div>
+
+    <!-- ── TAB: VISÃO GERAL ── -->
+    <div class="tab-content active" id="tab-visao-geral">
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <!-- NPS Score -->
+      <div class="nps-gauge-wrap">
+        <div class="nps-gauge-title">Índice NPS da Cervejaria Dias</div>
+        <div class="nps-score-big" id="nps-score-big">—</div>
+        <div class="nps-score-label" id="nps-score-label">Aguardando dados</div>
+        <div class="nps-bar-wrap">
+          <div class="nps-bar-det" id="bar-det" style="width:0%"></div>
+          <div class="nps-bar-neu" id="bar-neu" style="width:0%"></div>
+          <div class="nps-bar-pro" id="bar-pro" style="width:0%"></div>
+        </div>
+        <div class="nps-legend">
+          <span><span class="dot" style="background:var(--red)"></span> Detratores <strong id="pct-det">0%</strong></span>
+          <span><span class="dot" style="background:var(--yellow)"></span> Neutros <strong id="pct-neu">0%</strong></span>
+          <span><span class="dot" style="background:var(--green)"></span> Promotores <strong id="pct-pro">0%</strong></span>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <!-- Tendência NPS por semana -->
+        <div class="chart-card full">
+          <div class="chart-title">📈 Tendência — Nota Média por Semana</div>
+          <canvas id="chart-trend" height="80"></canvas>
+        </div>
+
+        <!-- O que os clientes mais gostam -->
+        <div class="chart-card">
+          <div class="chart-title">❤️ O que os clientes mais gostam</div>
+          <div class="bar-chart" id="chart-gostou"></div>
+        </div>
+
+        <!-- Distribuição de notas NPS -->
+        <div class="chart-card">
+          <div class="chart-title">📊 Distribuição das Notas NPS</div>
+          <div class="bar-chart" id="chart-notas"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── TAB: POR GARÇOM ── -->
+    <div class="tab-content" id="tab-garcons">
+      <div class="chart-card" style="margin-bottom:16px;">
+        <div class="chart-title">🏆 Ranking por Nota Média de Atendimento</div>
+        <div class="bar-chart" id="chart-garcons-bar"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">👥 Detalhamento por Garçom</div>
+        <div class="table-wrap">
+          <table id="table-garcons">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Garçom</th>
+                <th class="c">Avaliações</th>
+                <th class="c">Nota Média</th>
+                <th class="c">Estrelas</th>
+                <th class="c">NPS Médio</th>
+                <th class="c">Promotores</th>
+                <th class="c">Detratores</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-garcons"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: RESPOSTAS ── -->
+    <div class="tab-content" id="tab-respostas">
+      <div class="chart-card">
+        <div class="chart-title">📋 Todas as Respostas <span id="resp-count" style="font-size:11px;color:var(--gray);font-weight:400;"></span></div>
+        <div class="table-wrap">
+          <table class="resp-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>WhatsApp</th>
+                <th>Garçom</th>
+                <th class="c">NPS</th>
+                <th class="c">Estrelas</th>
+                <th>Comentário</th>
+                <th class="c">Cupom</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-respostas"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: ANIVERSARIANTES ── -->
+    <div class="tab-content" id="tab-aniversariantes">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="chart-card">
+          <div class="chart-title">🎂 Aniversariantes do Mês Atual</div>
+          <div id="bday-mes-atual" class="bday-list"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">🎉 Próximos Aniversariantes (30 dias)</div>
+          <div id="bday-proximos" class="bday-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ══════════════════════════════════════════
+// CONFIGURAÇÃO
+// ══════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbQcl-jZxR-tMGXYV9Bbwh7ghW-Y0PT8RVGYX1gAWB2dHHioqWOqoCUsBWPgg3L7E42w/exec';
+const SENHA = 'dias2024';
+// ══════════════════════════════════════════
+
+let allData = [];
+let filtered = [];
+
+// ── Auth ──
+function doLogin() {
+  if (document.getElementById('login-input').value === SENHA) {
+    document.getElementById('login-wrap').style.display = 'none';
+    document.getElementById('topbar').style.display = 'flex';
+    document.getElementById('main').style.display = 'block';
+    sessionStorage.setItem('nps_dash', '1');
+    loadData();
+  } else {
+    document.getElementById('err-login').style.display = 'block';
+    document.getElementById('login-input').value = '';
+  }
+}
+function logout() { sessionStorage.removeItem('nps_dash'); location.reload(); }
+if (sessionStorage.getItem('nps_dash')) {
+  document.getElementById('login-wrap').style.display = 'none';
+  document.getElementById('topbar').style.display = 'flex';
+  document.getElementById('main').style.display = 'block';
+  loadData();
+}
+
+// ── Tabs ──
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── Load data from Apps Script ──
+async function loadData() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('content').style.display = 'none';
+  try {
+    const resp = await fetch(SCRIPT_URL + '?action=get_all');
+    const json = await resp.json();
+    if (json.status === 'ok') {
+      allData = json.data || [];
+      populateGarcomFilter();
+      applyFilters();
+      document.getElementById('last-update').textContent =
+        'Atualizado: ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+    }
+  } catch(e) {
+    alert('Erro ao carregar dados. Verifique a conexão.');
+  } finally {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+  }
+}
+
+function populateGarcomFilter() {
+  const sel = document.getElementById('filter-garcom');
+  const garcons = [...new Set(allData.map(r => r.garcom_nome))].filter(Boolean).sort();
+  sel.innerHTML = '<option value="">Todos os garçons</option>';
+  garcons.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g; opt.textContent = g;
+    sel.appendChild(opt);
+  });
+}
+
+function applyFilters() {
+  const garcom  = document.getElementById('filter-garcom').value;
+  const periodo = parseInt(document.getElementById('filter-periodo').value);
+  const npscat  = document.getElementById('filter-nps').value;
+  const now     = new Date();
+
+  filtered = allData.filter(r => {
+    if (garcom && r.garcom_nome !== garcom) return false;
+    if (npscat && r.nps_cat !== npscat) return false;
+    if (periodo > 0) {
+      const d = parseDate(r.data);
+      if (d) {
+        const diff = (now - d) / 86400000;
+        if (diff > periodo) return false;
+      }
+    }
+    return true;
+  });
+
+  renderAll();
+}
+
+function parseDate(str) {
+  if (!str) return null;
+  const p = String(str).split('/');
+  if (p.length === 3) return new Date(p[2], p[1]-1, p[0]);
+  return null;
+}
+
+function renderAll() {
+  renderKPIs();
+  renderNPS();
+  renderTrend();
+  renderGostou();
+  renderNotas();
+  renderGarconsTab();
+  renderRespostas();
+  renderAniversariantes();
+}
+
+// ── KPIs ──
+function renderKPIs() {
+  const total    = filtered.length;
+  const promotor = filtered.filter(r => r.nps_cat === 'Promotor').length;
+  const detrator = filtered.filter(r => r.nps_cat === 'Detrator').length;
+  const neutro   = filtered.filter(r => r.nps_cat === 'Neutro').length;
+  const avgEst   = total ? (filtered.reduce((s,r) => s + (Number(r.estrelas)||0), 0) / total).toFixed(1) : '—';
+  const usados   = filtered.filter(r => r.status_cupom === 'USADO').length;
+  const pctUso   = total ? Math.round(usados/total*100) : 0;
+
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi blue">
+      <div class="kpi-label">Total Avaliações</div>
+      <div class="kpi-value">${total}</div>
+      <div class="kpi-sub">no período filtrado</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-label">Promotores</div>
+      <div class="kpi-value">${promotor}</div>
+      <div class="kpi-sub">${total ? Math.round(promotor/total*100) : 0}% do total</div>
+    </div>
+    <div class="kpi yellow">
+      <div class="kpi-label">Neutros</div>
+      <div class="kpi-value">${neutro}</div>
+      <div class="kpi-sub">${total ? Math.round(neutro/total*100) : 0}% do total</div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-label">Detratores</div>
+      <div class="kpi-value">${detrator}</div>
+      <div class="kpi-sub">${total ? Math.round(detrator/total*100) : 0}% do total</div>
+    </div>
+    <div class="kpi gold">
+      <div class="kpi-label">Estrelas Média</div>
+      <div class="kpi-value">${avgEst}</div>
+      <div class="kpi-sub">atendimento</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-label">Cupons Usados</div>
+      <div class="kpi-value">${usados}</div>
+      <div class="kpi-sub">${pctUso}% dos emitidos</div>
+    </div>
+  `;
+}
+
+// ── NPS Score ──
+function renderNPS() {
+  const total    = filtered.length;
+  if (!total) return;
+  const promotor = filtered.filter(r => r.nps_cat === 'Promotor').length;
+  const detrator = filtered.filter(r => r.nps_cat === 'Detrator').length;
+  const neutro   = filtered.filter(r => r.nps_cat === 'Neutro').length;
+  const pPro = Math.round(promotor/total*100);
+  const pDet = Math.round(detrator/total*100);
+  const pNeu = Math.round(neutro/total*100);
+  const nps  = pPro - pDet;
+
+  const el = document.getElementById('nps-score-big');
+  el.textContent = (nps > 0 ? '+' : '') + nps;
+  el.style.color = nps >= 50 ? 'var(--green)' : nps >= 0 ? 'var(--yellow)' : 'var(--red)';
+
+  const labels = { '-100_0': 'Crítico 🔴', '0_25': 'Razoável 🟡', '25_50': 'Bom 🟢', '50_75': 'Ótimo 🌟', '75_100': 'Excelente 🏆' };
+  let lbl = 'Crítico 🔴';
+  if (nps >= 75) lbl = 'Excelente 🏆';
+  else if (nps >= 50) lbl = 'Ótimo 🌟';
+  else if (nps >= 25) lbl = 'Bom 🟢';
+  else if (nps >= 0)  lbl = 'Razoável 🟡';
+  document.getElementById('nps-score-label').textContent = lbl + ' · Referência: acima de 50 = Excelente';
+
+  document.getElementById('bar-det').style.width = pDet + '%';
+  document.getElementById('bar-neu').style.width = pNeu + '%';
+  document.getElementById('pct-det').textContent = pDet + '%';
+  document.getElementById('pct-neu').textContent = pNeu + '%';
+  document.getElementById('pct-pro').textContent = pPro + '%';
+}
+
+// ── Trend chart ──
+function renderTrend() {
+  // Group by week
+  const weeks = {};
+  filtered.forEach(r => {
+    const d = parseDate(r.data);
+    if (!d) return;
+    const wk = getWeekKey(d);
+    if (!weeks[wk]) weeks[wk] = { sum: 0, count: 0 };
+    weeks[wk].sum   += Number(r.nps) || 0;
+    weeks[wk].count += 1;
+  });
+
+  const sorted = Object.keys(weeks).sort();
+  if (!sorted.length) return;
+
+  const labels = sorted.map(w => w.slice(5)); // MM/DD
+  const values = sorted.map(w => (weeks[w].sum / weeks[w].count).toFixed(1));
+  const counts = sorted.map(w => weeks[w].count);
+
+  const canvas = document.getElementById('chart-trend');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 600;
+  const H = 120;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { t: 10, r: 20, b: 30, l: 40 };
+  const cw = W - pad.l - pad.r;
+  const ch = H - pad.t - pad.b;
+  const minV = 0, maxV = 10;
+  const n = values.length;
+
+  const px = (i) => pad.l + (n === 1 ? cw/2 : i * cw / (n-1));
+  const py = (v) => pad.t + ch - (v - minV) / (maxV - minV) * ch;
+
+  // Grid lines
+  ctx.strokeStyle = '#E5E7EB'; ctx.lineWidth = 0.5;
+  [0,2,4,6,8,10].forEach(v => {
+    ctx.beginPath(); ctx.moveTo(pad.l, py(v)); ctx.lineTo(pad.l + cw, py(v)); ctx.stroke();
+    ctx.fillStyle = '#9CA3AF'; ctx.font = '10px sans-serif';
+    ctx.fillText(v, pad.l - 16, py(v) + 3);
+  });
+
+  // Fill area
+  if (n > 1) {
+    ctx.beginPath();
+    ctx.moveTo(px(0), py(values[0]));
+    values.forEach((v, i) => { if (i > 0) ctx.lineTo(px(i), py(v)); });
+    ctx.lineTo(px(n-1), H - pad.b);
+    ctx.lineTo(px(0), H - pad.b);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(30,92,46,0.08)';
+    ctx.fill();
+  }
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#1E5C2E'; ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  values.forEach((v, i) => { i === 0 ? ctx.moveTo(px(i), py(v)) : ctx.lineTo(px(i), py(v)); });
+  ctx.stroke();
+
+  // Points + labels
+  values.forEach((v, i) => {
+    ctx.beginPath();
+    ctx.arc(px(i), py(v), 4, 0, Math.PI*2);
+    ctx.fillStyle = v >= 9 ? '#1E5C2E' : v >= 7 ? '#D97706' : '#DC2626';
+    ctx.fill();
+    ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    // Value label
+    ctx.fillStyle = '#374151'; ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(v, px(i), py(v) - 8);
+
+    // X axis label
+    ctx.fillStyle = '#9CA3AF'; ctx.font = '9px sans-serif';
+    ctx.fillText(labels[i], px(i), H - pad.b + 14);
+  });
+}
+
+function getWeekKey(date) {
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay());
+  return d.toLocaleDateString('pt-BR').slice(3); // MM/YYYY
+}
+
+// ── O que gostou ──
+function renderGostou() {
+  const counts = {};
+  filtered.forEach(r => {
+    (r.gostou || '').split(',').forEach(item => {
+      const k = item.trim();
+      if (k) counts[k] = (counts[k] || 0) + 1;
+    });
+  });
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 7);
+  const max = sorted[0]?.[1] || 1;
+
+  const colors = ['#1E5C2E','#2D7A40','#B8962A','#1D4ED8','#D97706','#7C3AED','#DC2626'];
+  document.getElementById('chart-gostou').innerHTML = sorted.map(([label, count], i) => `
+    <div class="bar-row">
+      <div class="bar-label" title="${label}">${label}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.round(count/max*100)}%;background:${colors[i%colors.length]}">
+          <span class="bar-val">${count}</span>
+        </div>
+      </div>
+    </div>`).join('') || '<div class="empty">Sem dados</div>';
+}
+
+// ── Distribuição notas ──
+function renderNotas() {
+  const counts = Array(11).fill(0);
+  filtered.forEach(r => { const n = Number(r.nps); if (!isNaN(n) && n >= 0 && n <= 10) counts[n]++; });
+  const max = Math.max(...counts, 1);
+  const colors = n => n >= 9 ? '#1E5C2E' : n >= 7 ? '#D97706' : '#DC2626';
+
+  document.getElementById('chart-notas').innerHTML = counts.map((c, n) => `
+    <div class="bar-row">
+      <div class="bar-label">${n}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.round(c/max*100)}%;background:${colors(n)}">
+          ${c > 0 ? `<span class="bar-val">${c}</span>` : ''}
+        </div>
+      </div>
+      <div class="bar-count">${c}</div>
+    </div>`).join('');
+}
+
+// ── Garçons tab ──
+function renderGarconsTab() {
+  const garcons = {};
+  filtered.forEach(r => {
+    const g = r.garcom_nome || r.garcom_id || 'Desconhecido';
+    if (!garcons[g]) garcons[g] = { nome: g, resps: 0, npsSum: 0, estSum: 0, pro: 0, det: 0, neu: 0 };
+    garcons[g].resps++;
+    garcons[g].npsSum += Number(r.nps) || 0;
+    garcons[g].estSum += Number(r.estrelas) || 0;
+    if (r.nps_cat === 'Promotor') garcons[g].pro++;
+    if (r.nps_cat === 'Detrator') garcons[g].det++;
+    if (r.nps_cat === 'Neutro')   garcons[g].neu++;
+  });
+
+  const list = Object.values(garcons).sort((a,b) => (b.estSum/b.resps) - (a.estSum/a.resps));
+  const maxEst = Math.max(...list.map(g => g.estSum/g.resps), 1);
+
+  // Bar chart
+  document.getElementById('chart-garcons-bar').innerHTML = list.map(g => {
+    const avg = (g.estSum/g.resps).toFixed(1);
+    return `<div class="bar-row">
+      <div class="bar-label" title="${g.nome}">${g.nome.split(' ')[0]}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.round(avg/maxEst*100)}%;background:var(--gold)">
+          <span class="bar-val">${avg} ★</span>
+        </div>
+      </div>
+      <div class="bar-count">${g.resps}</div>
+    </div>`;
+  }).join('');
+
+  // Table
+  document.getElementById('tbody-garcons').innerHTML = list.map((g, i) => {
+    const avgNps = (g.npsSum/g.resps).toFixed(1);
+    const avgEst = (g.estSum/g.resps).toFixed(1);
+    const stars  = '★'.repeat(Math.round(avgEst)) + '☆'.repeat(5 - Math.round(avgEst));
+    return `<tr>
+      <td>${i+1}</td>
+      <td><strong>${g.nome}</strong></td>
+      <td class="c">${g.resps}</td>
+      <td class="c"><strong>${avgEst}</strong></td>
+      <td class="c"><span class="stars-display">${stars}</span></td>
+      <td class="c"><strong>${avgNps}</strong></td>
+      <td class="c"><span class="nps-pill nps-pro">${g.pro}</span></td>
+      <td class="c"><span class="nps-pill nps-det">${g.det}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" class="empty">Sem dados</td></tr>';
+}
+
+// ── Respostas table ──
+function renderRespostas() {
+  const sorted = [...filtered].sort((a,b) => {
+    const da = parseDate(a.data), db = parseDate(b.data);
+    return (db||0) - (da||0);
+  });
+  document.getElementById('resp-count').textContent = `(${sorted.length} registros)`;
+  const npsColor = c => c === 'Promotor' ? 'nps-pro' : c === 'Detrator' ? 'nps-det' : 'nps-neu';
+  const stars = n => '★'.repeat(Number(n)||0) + '☆'.repeat(5-(Number(n)||0));
+  document.getElementById('tbody-respostas').innerHTML = sorted.map(r => `
+    <tr>
+      <td style="white-space:nowrap">${r.data || '—'}</td>
+      <td><strong>${r.nome || '—'}</strong></td>
+      <td style="white-space:nowrap">${r.contato || '—'}</td>
+      <td>${(r.garcom_nome || '').split(' ')[0]}</td>
+      <td class="c"><span class="nps-pill ${npsColor(r.nps_cat)}">${r.nps}</span></td>
+      <td class="c"><span class="stars-display" style="font-size:11px">${stars(r.estrelas)}</span></td>
+      <td class="comment-cell" title="${r.comentario || ''}">${r.comentario || '—'}</td>
+      <td class="c"><span style="font-size:10px;font-family:monospace;color:${r.status_cupom==='USADO'?'var(--gray)':'var(--green)'}">
+        ${r.status_cupom === 'USADO' ? '🚫 Usado' : '✅ Ativo'}
+      </span></td>
+    </tr>`).join('') || '<tr><td colspan="8" class="empty">Sem respostas</td></tr>';
+}
+
+// ── Aniversariantes ──
+function renderAniversariantes() {
+  const now    = new Date();
+  const mesAtual = now.getMonth() + 1;
+
+  const mesAtualList = [];
+  const proximosList = [];
+
+  allData.forEach(r => {
+    if (!r.aniversario) return;
+    const parts = r.aniversario.split('/');
+    if (parts.length < 2) return;
+    const dia = parseInt(parts[0]);
+    const mes = parseInt(parts[1]);
+    if (isNaN(dia) || isNaN(mes)) return;
+
+    const thisYear = new Date(now.getFullYear(), mes-1, dia);
+    const diffDays = Math.ceil((thisYear - now) / 86400000);
+
+    if (mes === mesAtual) mesAtualList.push({ ...r, dia, mes, diffDays });
+    if (diffDays >= 0 && diffDays <= 30 && mes !== mesAtual) proximosList.push({ ...r, dia, mes, diffDays });
+  });
+
+  mesAtualList.sort((a,b) => a.dia - b.dia);
+  proximosList.sort((a,b) => a.diffDays - b.diffDays);
+
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  const renderList = (list, container) => {
+    document.getElementById(container).innerHTML = list.length
+      ? list.map(r => `
+        <div class="bday-item">
+          <div>
+            <div class="bday-name">${r.nome || '—'}</div>
+            <div class="bday-info">${r.contato || ''} · ${(r.garcom_nome||'').split(' ')[0]}</div>
+          </div>
+          <div class="bday-date">${String(r.dia).padStart(2,'0')}/${meses[r.mes-1]}</div>
+        </div>`).join('')
+      : '<div class="empty">Nenhum aniversariante</div>';
+  };
+
+  renderList(mesAtualList, 'bday-mes-atual');
+  renderList(proximosList, 'bday-proximos');
+}
+
+// Enter on login
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('login-input').focus();
+});
+</script>
+</body>
+</html>

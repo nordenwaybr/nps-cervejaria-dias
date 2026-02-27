@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Cervejaria Dias — Sua Opinião</title>
+<style>
+  :root {
+    --green:      #1E5C2E;
+    --green-mid:  #2D7A40;
+    --green-lt:   #EAF4EC;
+    --gold:       #B8962A;
+    --gold-lt:    #FBF5E6;
+    --dark:       #1A1A1A;
+    --gray:       #6B7280;
+    --gray-lt:    #F3F4F6;
+    --white:      #FFFFFF;
+    --red:        #DC2626;
+    --line:       #E5E7EB;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0F3D1A;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 40px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    width: 100%;
+    background: var(--green);
+    padding: 20px 20px 16px;
+    text-align: center;
+    border-bottom: 3px solid var(--gold);
+    position: relative;
+  }
+  .header img { height: 64px; width: auto; margin-bottom: 8px; }
+  .header h1 { font-size: 18px; font-weight: 700; color: var(--white); letter-spacing: 1px; }
+  .header p  { font-size: 13px; color: var(--gold); margin-top: 4px; }
+  .garcom-badge {
+    display: inline-block;
+    background: rgba(184,150,42,0.2);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 12px;
+    border-radius: 20px;
+    margin-top: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 480px;
+    margin-top: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  }
+
+  /* ── STEP INDICATOR ── */
+  .steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--line);
+    transition: all 0.3s;
+  }
+  .step-dot.active { background: var(--gold); width: 24px; border-radius: 4px; }
+  .step-dot.done   { background: var(--green); }
+
+  /* ── QUESTION BLOCK ── */
+  .q-block { display: none; animation: fadeIn 0.3s ease; }
+  .q-block.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  .q-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+  .q-sub {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  /* ── INPUTS ── */
+  input[type=text], input[type=email], input[type=tel], input[type=date], select, textarea {
+    width: 100%;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 13px 14px;
+    font-size: 15px;
+    color: var(--dark);
+    background: var(--white);
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--green); }
+  textarea { resize: none; height: 90px; }
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── NPS SCALE ── */
+  .nps-scale {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .nps-btn {
+    aspect-ratio: 1;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--white);
+    color: var(--gray);
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nps-btn:hover { border-color: var(--green); color: var(--green); }
+  .nps-btn.sel-red    { background: #DC2626; border-color: #DC2626; color: white; }
+  .nps-btn.sel-yellow { background: #D97706; border-color: #D97706; color: white; }
+  .nps-btn.sel-green  { background: var(--green); border-color: var(--green); color: white; }
+
+  .nps-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 4px;
+  }
+
+  /* ── STAR RATING ── */
+  .stars {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    font-size: 36px;
+    cursor: pointer;
+    margin: 8px 0 16px;
+  }
+  .star { color: var(--line); transition: all 0.15s; user-select: none; }
+  .star.lit { color: var(--gold); transform: scale(1.1); }
+
+  /* ── CHIPS ── */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    border: 2px solid var(--line);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .chip:hover  { border-color: var(--green); color: var(--green); }
+  .chip.chosen { border-color: var(--green); background: var(--green-lt); color: var(--green); font-weight: 700; }
+
+  /* ── BIRTHDAY ── */
+  .bday-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .bday-row select { color: var(--dark); }
+  .bday-row select option[value=""] { color: var(--gray); }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    width: 100%;
+    background: var(--green);
+    color: var(--white);
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background 0.2s, transform 0.1s;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+  }
+  .btn-primary:hover  { background: var(--green-mid); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { background: var(--gray); cursor: not-allowed; }
+
+  .btn-back {
+    background: none;
+    border: none;
+    color: var(--gray);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 10px 0 0;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-back:hover { color: var(--dark); }
+
+  /* ── ERROR ── */
+  .err { color: var(--red); font-size: 12px; margin-top: 6px; display: none; }
+  .err.show { display: block; }
+
+  /* ── COUPON ── */
+  #coupon-screen { display: none; }
+  .coupon-header {
+    text-align: center;
+    padding: 20px 0 16px;
+  }
+  .coupon-header .check {
+    width: 64px; height: 64px;
+    background: var(--green);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 30px;
+  }
+  .coupon-header h2 { font-size: 22px; font-weight: 700; color: var(--dark); }
+  .coupon-header p  { font-size: 14px; color: var(--gray); margin-top: 4px; line-height: 1.5; }
+
+  .coupon {
+    border: 2.5px dashed var(--gold);
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 20px 0;
+    position: relative;
+  }
+  .coupon::before, .coupon::after {
+    content: '';
+    position: absolute;
+    width: 24px; height: 24px;
+    background: #0F3D1A;
+    border-radius: 50%;
+    top: 50%; transform: translateY(-50%);
+  }
+  .coupon::before { left: -13px; }
+  .coupon::after  { right: -13px; }
+
+  .coupon-top {
+    background: var(--green);
+    padding: 20px;
+    text-align: center;
+  }
+  .coupon-top .logo-sm { height: 40px; margin-bottom: 8px; }
+  .coupon-top h3 { font-size: 13px; color: rgba(255,255,255,0.7); letter-spacing: 2px; text-transform: uppercase; }
+  .coupon-top .discount {
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--gold);
+    line-height: 1;
+    margin: 4px 0;
+  }
+  .coupon-top .discount-label { font-size: 15px; color: rgba(255,255,255,0.85); }
+
+  .coupon-divider {
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--gold) 0, var(--gold) 8px, transparent 8px, transparent 14px);
+  }
+
+  .coupon-bottom {
+    background: var(--gold-lt);
+    padding: 16px 20px;
+    text-align: center;
+  }
+  .coupon-code-label { font-size: 11px; color: var(--gray); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .coupon-code {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--green);
+    letter-spacing: 4px;
+    font-family: 'Courier New', monospace;
+  }
+  .coupon-validity {
+    font-size: 12px;
+    color: var(--gray);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+  .coupon-validity strong { color: var(--dark); }
+
+  .coupon-terms {
+    font-size: 10px;
+    color: var(--gray);
+    text-align: center;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  .share-hint {
+    background: var(--gray-lt);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--gray);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .share-hint strong { color: var(--dark); }
+
+  /* ── LOADING ── */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 30px;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 4px solid var(--line);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    height: 4px;
+    background: var(--line);
+    border-radius: 4px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--gold));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div style="font-size:40px;">🍺</div>
+  <h1>Cervejaria Dias</h1>
+  <p>Sua opinião é muito importante para nós!</p>
+  <div class="garcom-badge" id="garcom-label">Carregando...</div>
+</div>
+
+<!-- FORM CARD -->
+<div class="card" id="form-screen">
+
+  <!-- Progress -->
+  <div class="progress-bar"><div class="progress-fill" id="progress" style="width:14%"></div></div>
+
+  <!-- Steps indicator -->
+  <div class="steps" id="steps-indicator"></div>
+
+  <!-- ── STEP 1: Identificação ── -->
+  <div class="q-block active" id="step-1">
+    <div class="q-title">Olá! Como podemos te chamar? 😊</div>
+    <div class="q-sub">Seus dados são confidenciais e usados apenas para melhorarmos seu atendimento.</div>
+    <input type="text" id="nome" placeholder="Seu nome completo" autocomplete="given-name">
+    <div style="margin-top:12px;">
+      <input type="tel" id="telefone" placeholder="WhatsApp ou e-mail" autocomplete="tel">
+    </div>
+    <div class="err" id="err-1">Por favor, preencha seu nome.</div>
+    <button class="btn-primary" onclick="nextStep(1)">Continuar →</button>
+  </div>
+
+  <!-- ── STEP 2: Aniversário ── -->
+  <div class="q-block" id="step-2">
+    <div class="q-title">🎂 Quando é seu aniversário?</div>
+    <div class="q-sub">Vamos te surpreender com uma oferta especial no seu dia!</div>
+    <div class="bday-row">
+      <select id="bday-dia">
+        <option value="">Dia</option>
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+        <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+        <option>11</option><option>12</option><option>13</option><option>14</option><option>15</option>
+        <option>16</option><option>17</option><option>18</option><option>19</option><option>20</option>
+        <option>21</option><option>22</option><option>23</option><option>24</option><option>25</option>
+        <option>26</option><option>27</option><option>28</option><option>29</option><option>30</option>
+        <option>31</option>
+      </select>
+      <select id="bday-mes">
+        <option value="">Mês</option>
+        <option value="01">Janeiro</option><option value="02">Fevereiro</option>
+        <option value="03">Março</option><option value="04">Abril</option>
+        <option value="05">Maio</option><option value="06">Junho</option>
+        <option value="07">Julho</option><option value="08">Agosto</option>
+        <option value="09">Setembro</option><option value="10">Outubro</option>
+        <option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+    </div>
+    <div class="err" id="err-2">Selecione o dia e mês do seu aniversário.</div>
+    <button class="btn-primary" onclick="nextStep(2)">Continuar →</button>
+    <button class="btn-back" onclick="prevStep(2)">← Voltar</button>
+  </div>
+
+  <!-- ── STEP 3: NPS ── -->
+  <div class="q-block" id="step-3">
+    <div class="q-title">De 0 a 10, qual a chance de você recomendar a Cervejaria Dias a um amigo?</div>
+    <div class="q-sub">0 = com certeza não recomendaria &nbsp;·&nbsp; 10 = com certeza recomendaria</div>
+    <div class="nps-scale" id="nps-scale">
+      <button class="nps-btn" onclick="selectNPS(this,0)">0</button>
+      <button class="nps-btn" onclick="selectNPS(this,1)">1</button>
+      <button class="nps-btn" onclick="selectNPS(this,2)">2</button>
+      <button class="nps-btn" onclick="selectNPS(this,3)">3</button>
+      <button class="nps-btn" onclick="selectNPS(this,4)">4</button>
+      <button class="nps-btn" onclick="selectNPS(this,5)">5</button>
+      <button class="nps-btn" onclick="selectNPS(this,6)">6</button>
+      <button class="nps-btn" onclick="selectNPS(this,7)">7</button>
+      <button class="nps-btn" onclick="selectNPS(this,8)">8</button>
+      <button class="nps-btn" onclick="selectNPS(this,9)">9</button>
+      <button class="nps-btn" onclick="selectNPS(this,10)">10</button>
+    </div>
+    <div class="nps-labels"><span>😞 Jamais</span><span>😐 Talvez</span><span>😍 Com certeza!</span></div>
+    <div class="err" id="err-3">Por favor, selecione uma nota.</div>
+    <button class="btn-primary" onclick="nextStep(3)">Continuar →</button>
+    <button class="btn-back" onclick="prevStep(3)">← Voltar</button>
+  </div>
+
+  <!-- ── STEP 4: O que gostou ── -->
+  <div class="q-block" id="step-4">
+    <div class="q-title">O que você mais gostou hoje? 🎉</div>
+    <div class="q-sub">Pode marcar mais de um!</div>
+    <div class="chips" id="chips-gostou">
+      <div class="chip" onclick="toggleChip(this)">🍖 Comida</div>
+      <div class="chip" onclick="toggleChip(this)">🍺 Cerveja Artesanal</div>
+      <div class="chip" onclick="toggleChip(this)">🍹 Drinks</div>
+      <div class="chip" onclick="toggleChip(this)">😊 Atendimento</div>
+      <div class="chip" onclick="toggleChip(this)">🎵 Ambiente & Música</div>
+      <div class="chip" onclick="toggleChip(this)">💰 Preço & Custo-benefício</div>
+      <div class="chip" onclick="toggleChip(this)">✨ Tudo!</div>
+    </div>
+    <div class="err" id="err-4">Selecione pelo menos uma opção.</div>
+    <button class="btn-primary" onclick="nextStep(4)">Continuar →</button>
+    <button class="btn-back" onclick="prevStep(4)">← Voltar</button>
+  </div>
+
+  <!-- ── STEP 5: Avaliação garçom ── -->
+  <div class="q-block" id="step-5">
+    <div class="q-title" id="garcom-q-title">Como foi o atendimento do seu garçom?</div>
+    <div class="q-sub">Toque nas estrelas para avaliar</div>
+    <div class="stars" id="stars">
+      <span class="star" onclick="selectStar(1)">★</span>
+      <span class="star" onclick="selectStar(2)">★</span>
+      <span class="star" onclick="selectStar(3)">★</span>
+      <span class="star" onclick="selectStar(4)">★</span>
+      <span class="star" onclick="selectStar(5)">★</span>
+    </div>
+    <div id="star-label" style="text-align:center;font-size:14px;color:var(--gray);margin-bottom:8px;min-height:20px;"></div>
+    <div class="err" id="err-5">Por favor, avalie com estrelas.</div>
+    <button class="btn-primary" onclick="nextStep(5)">Continuar →</button>
+    <button class="btn-back" onclick="prevStep(5)">← Voltar</button>
+  </div>
+
+  <!-- ── STEP 6: Comentário ── -->
+  <div class="q-block" id="step-6">
+    <div class="q-title">Quer deixar algum comentário? 💬</div>
+    <div class="q-sub">Opcional — mas adoramos saber o que você pensa!</div>
+    <textarea id="comentario" placeholder="Ex: adorei a fraldinha, o atendimento foi excelente..."></textarea>
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p style="color:var(--gray);font-size:14px;">Enviando sua avaliação...</p>
+    </div>
+    <button class="btn-primary" id="btn-submit" onclick="submitForm()">Enviar e Receber Cupom 🎁</button>
+    <button class="btn-back" onclick="prevStep(6)">← Voltar</button>
+  </div>
+
+</div>
+
+<!-- COUPON SCREEN -->
+<div class="card" id="coupon-screen">
+  <div class="coupon-header">
+    <div class="check">✓</div>
+    <h2>Obrigado pela avaliação!</h2>
+    <p>Seu cupom de desconto está pronto.<br>Apresente na próxima visita!</p>
+  </div>
+
+  <div class="coupon">
+    <div class="coupon-top">
+      <div style="font-size:30px;margin-bottom:4px;">🍺</div>
+      <h3>Cervejaria Dias — Brewpub</h3>
+      <div class="discount" id="coupon-discount">10%</div>
+      <div class="discount-label" id="coupon-desc">de desconto na sua próxima visita</div>
+    </div>
+    <div class="coupon-divider"></div>
+    <div class="coupon-bottom">
+      <div class="coupon-code-label">Código do Cupom</div>
+      <div class="coupon-code" id="coupon-code">DIAS0000</div>
+      <div class="coupon-validity">
+        Válido por <strong>30 dias</strong> a partir de hoje<br>
+        Válido <strong id="coupon-date"></strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="coupon-terms">
+    * Cupom válido para 1 uso por pessoa · Não acumulável com outras promoções<br>
+    Apresente este cupom ao garçom antes de fechar a conta
+  </div>
+
+  <div class="share-hint" style="margin-top:16px;">
+    📸 <strong>Tire um print desta tela</strong> para guardar seu cupom!<br>
+    <span style="font-size:12px;">Ou anote o código: <strong id="coupon-code-repeat"></strong></span>
+  </div>
+
+  <div style="text-align:center; margin-top:20px;">
+    <button class="btn-primary" style="background:var(--gold); margin-top:0;"
+      onclick="window.print ? window.print() : alert('Tire um print da tela para salvar!')">
+      💾 Salvar / Imprimir Cupom
+    </button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIGURAÇÃO — edite aqui
+// ══════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3vBgckTNTgGR2GDKypUzj-z19dP9WVnhi3kkgPLdAM7mmL6ylKWMXLSJizPleBLn74w/exec';
+
+const GARCONS = {
+  'victor':     'Victor Nomellini',
+  'maria':     'Maria Oliveira',
+  'pedro':     'Pedro Santos',
+  'ana':       'Ana Costa',
+  'lucas':     'Lucas Ferreira',
+  'julia':     'Julia Rodrigues',
+  'carlos':    'Carlos Mendes',
+  'patricia':  'Patricia Lima',
+  'rafael':    'Rafael Souza',
+  'fernanda':  'Fernanda Alves',
+  'gabriel':   'Gabriel Martins',
+  'camila':    'Camila Pereira',
+  'thiago':    'Thiago Barbosa',
+};
+// ══════════════════════════════════════════
+
+const TOTAL_STEPS = 6;
+let currentStep = 1;
+let npsScore = null;
+let starScore = null;
+let garcomId = '';
+let garcomName = '';
+
+// Get garcom from URL
+const urlParams = new URLSearchParams(window.location.search);
+garcomId = (urlParams.get('g') || urlParams.get('garcom') || '').toLowerCase();
+garcomName = GARCONS[garcomId] || 'Garçom';
+
+// Set header
+document.getElementById('garcom-label').textContent =
+  garcomId ? `Garçom: ${garcomName}` : 'Avaliação Geral';
+document.getElementById('garcom-q-title').textContent =
+  `Como foi o atendimento de ${garcomName}?`;
+
+// Build step dots
+const stepsEl = document.getElementById('steps-indicator');
+for (let i = 1; i <= TOTAL_STEPS; i++) {
+  const d = document.createElement('div');
+  d.className = 'step-dot' + (i === 1 ? ' active' : '');
+  d.id = `dot-${i}`;
+  stepsEl.appendChild(d);
+}
+
+function updateProgress(step) {
+  const pct = Math.round((step / TOTAL_STEPS) * 100);
+  document.getElementById('progress').style.width = pct + '%';
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const d = document.getElementById(`dot-${i}`);
+    d.className = 'step-dot' + (i === step ? ' active' : i < step ? ' done' : '');
+  }
+}
+
+function showStep(n) {
+  document.querySelectorAll('.q-block').forEach(b => b.classList.remove('active'));
+  document.getElementById(`step-${n}`).classList.add('active');
+  currentStep = n;
+  updateProgress(n);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep(from) {
+  if (!validate(from)) return;
+  if (from < TOTAL_STEPS) showStep(from + 1);
+}
+
+function prevStep(from) {
+  if (from > 1) showStep(from - 1);
+}
+
+function validate(step) {
+  const err = (id, show) => {
+    document.getElementById(id).classList.toggle('show', show);
+    return !show;
+  };
+  if (step === 1) return err('err-1', !document.getElementById('nome').value.trim());
+  if (step === 2) return err('err-2', !document.getElementById('bday-dia').value || !document.getElementById('bday-mes').value);
+  if (step === 3) return err('err-3', npsScore === null);
+  if (step === 4) return err('err-4', document.querySelectorAll('#chips-gostou .chosen').length === 0);
+  if (step === 5) return err('err-5', !starScore);
+  return true;
+}
+
+// NPS
+function selectNPS(btn, score) {
+  npsScore = score;
+  document.querySelectorAll('.nps-btn').forEach(b => {
+    b.classList.remove('sel-red','sel-yellow','sel-green');
+    const v = parseInt(b.textContent);
+    if (v <= score) {
+      b.classList.add(v <= 6 ? 'sel-red' : v <= 8 ? 'sel-yellow' : 'sel-green');
+    }
+  });
+  document.getElementById('err-3').classList.remove('show');
+}
+
+// Stars
+const starLabels = ['','Ruim 😞','Regular 😐','Bom 🙂','Ótimo 😄','Excelente! 🤩'];
+function selectStar(n) {
+  starScore = n;
+  document.querySelectorAll('.star').forEach((s, i) => {
+    s.classList.toggle('lit', i < n);
+  });
+  document.getElementById('star-label').textContent = starLabels[n];
+  document.getElementById('err-5').classList.remove('show');
+}
+
+// Chips
+function toggleChip(el) {
+  el.classList.toggle('chosen');
+  document.getElementById('err-4').classList.remove('show');
+}
+
+// Generate coupon code
+function genCode() {
+  const prefix = 'DIAS';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = prefix;
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+// Generate validity date (+30 days)
+function validityDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+// NPS category
+function npsCategory(score) {
+  if (score >= 9) return 'Promotor';
+  if (score >= 7) return 'Neutro';
+  return 'Detrator';
+}
+
+// Coupon value based on NPS
+function couponValue(score) {
+  if (score >= 9) return { discount: '10%', desc: 'de desconto na sua próxima visita' };
+  if (score >= 7) return { discount: '10%', desc: 'de desconto na sua próxima visita' };
+  return { discount: '10%', desc: 'de desconto na sua próxima visita' };
+}
+
+async function submitForm() {
+  if (!validate(6)) return;
+
+  const code = genCode();
+  const validity = validityDate();
+  const chosen = [...document.querySelectorAll('#chips-gostou .chosen')].map(c => c.textContent).join(', ');
+  const now = new Date();
+
+  const data = {
+    timestamp:    now.toLocaleString('pt-BR'),
+    data:         now.toLocaleDateString('pt-BR'),
+    hora:         now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}),
+    garcom_id:    garcomId,
+    garcom_nome:  garcomName,
+    nome:         document.getElementById('nome').value.trim(),
+    contato:      document.getElementById('telefone').value.trim(),
+    aniversario:  document.getElementById('bday-dia').value + '/' + document.getElementById('bday-mes').value,
+    nps:          npsScore,
+    nps_cat:      npsCategory(npsScore),
+    gostou:       chosen,
+    estrelas:     starScore,
+    comentario:   document.getElementById('comentario').value.trim(),
+    cupom_codigo: code,
+    cupom_validade: validity,
+  };
+
+  // Show loading
+  document.getElementById('btn-submit').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+
+  // Send to Google Apps Script
+  if (SCRIPT_URL !== 'https://script.google.com/macros/s/AKfycby3vBgckTNTgGR2GDKypUzj-z19dP9WVnhi3kkgPLdAM7mmL6ylKWMXLSJizPleBLn74w/exec') {
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    } catch(e) {
+      console.warn('Erro ao enviar:', e);
+    }
+  }
+
+  // Show coupon
+  setTimeout(() => {
+    document.getElementById('form-screen').style.display = 'none';
+    document.getElementById('coupon-screen').style.display = 'block';
+
+    const cv = couponValue(npsScore);
+    document.getElementById('coupon-discount').textContent = cv.discount;
+    document.getElementById('coupon-desc').textContent = cv.desc;
+    document.getElementById('coupon-code').textContent = code;
+    document.getElementById('coupon-code-repeat').textContent = code;
+    document.getElementById('coupon-date').textContent = `até ${validity}`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 1800);
+}
+</script>
+</body>
+</html>

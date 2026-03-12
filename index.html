@@ -568,29 +568,8 @@ let starScore = null;
 let garcomId = '';
 let garcomName = '';
 
-// Check if already submitted on this device
-function checkAlreadySubmitted() {
-  const key = 'nps_dias_submitted';
-  const saved = localStorage.getItem(key);
-  if (saved) {
-    const obj = JSON.parse(saved);
-    // Show already-used screen
-    document.getElementById('form-screen').style.display = 'none';
-    document.getElementById('coupon-screen').style.display = 'block';
-    document.getElementById('coupon-discount').textContent = obj.discount || '10%';
-    document.getElementById('coupon-desc').textContent = 'de desconto na sua próxima visita';
-    document.getElementById('coupon-code').textContent = obj.code;
-    document.getElementById('coupon-code-repeat').textContent = obj.code;
-    document.getElementById('coupon-date').textContent = `até ${obj.validity}`;
-    // Show "already used" banner
-    const banner = document.createElement('div');
-    banner.style.cssText = 'background:#FEF3C7;border:1.5px solid #D97706;border-radius:10px;padding:12px 16px;text-align:center;font-size:13px;color:#92400E;margin-bottom:16px;line-height:1.5;';
-    banner.innerHTML = '⚠️ <strong>Você já respondeu esta pesquisa.</strong><br>Seu cupom está abaixo — apresente ao garçom!';
-    document.querySelector('.coupon-header').insertAdjacentElement('afterend', banner);
-    return true;
-  }
-  return false;
-}
+// checkAlreadySubmitted removido — cliente pode avaliar mais de uma vez
+// O cupom só é gerado na primeira avaliação (controlado pelo Apps Script)
 
 // Get garcom from URL
 const urlParams = new URLSearchParams(window.location.search);
@@ -603,8 +582,7 @@ document.getElementById('garcom-label').textContent =
 document.getElementById('garcom-q-title').textContent =
   `Como foi o atendimento de ${garcomName}?`;
 
-// Check already submitted
-checkAlreadySubmitted();
+// Avaliações múltiplas permitidas — cupom apenas na primeira
 
 // Build step dots
 const stepsEl = document.getElementById('steps-indicator');
@@ -770,33 +748,24 @@ async function submitForm() {
   document.getElementById('btn-submit').style.display = 'none';
   document.getElementById('loading').style.display = 'block';
 
-  // 1) Check if this contact already submitted (via Apps Script)
-  let isDuplicate = false;
+  // 1) Verificar se é a primeira vez deste contato
+  let isFirstTime = true;
   try {
     const checkParams = new URLSearchParams({ action: 'check', contato: contato });
     const resp = await fetch(SCRIPT_URL + '?' + checkParams.toString());
     const json = await resp.json();
-    if (json.status === 'duplicate') {
-      isDuplicate = true;
-      // Show already used message
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('btn-submit').style.display = 'block';
-      const existing = document.getElementById('already-used-msg');
-      if (!existing) {
-        const msg = document.createElement('div');
-        msg.id = 'already-used-msg';
-        msg.style.cssText = 'background:#FEE2E2;border:1.5px solid #DC2626;border-radius:10px;padding:14px 16px;text-align:center;font-size:14px;color:#991B1B;margin-top:16px;line-height:1.6;';
-        msg.innerHTML = '⚠️ <strong>Este contato já respondeu a pesquisa.</strong><br>Cada pessoa pode gerar apenas 1 cupom.';
-        document.getElementById('step-6').appendChild(msg);
-      }
-      return;
-    }
+    isFirstTime = json.first_time !== false; // true por padrão se falhar
   } catch(e) {
-    // If check fails (network/CORS), proceed anyway — Apps Script will deduplicate on save
-    console.warn('Check failed, proceeding:', e);
+    console.warn('Check falhou, assumindo primeira vez:', e);
   }
 
-  // 2) Save data
+  // 2) Se não é a primeira vez, salvar sem cupom
+  if (!isFirstTime) {
+    data.cupom_codigo   = '';
+    data.cupom_validade = '';
+  }
+
+  // 3) Salvar resposta (sempre)
   try {
     const params = new URLSearchParams({ action: 'save', payload: JSON.stringify(data) });
     await fetch(SCRIPT_URL + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
@@ -804,12 +773,29 @@ async function submitForm() {
     console.warn('Erro ao enviar:', e);
   }
 
-  // 3) Mark as submitted in localStorage (this device)
+  // 4) Se não é primeira vez, mostrar tela de agradecimento sem cupom
+  if (!isFirstTime) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('form-screen').style.display = 'none';
+    document.getElementById('coupon-screen').style.display = 'block';
+    // Esconde elementos do cupom
+    document.querySelectorAll('.coupon-code, .coupon-date, #coupon-code-repeat').forEach(el => el.style.display = 'none');
+    document.getElementById('coupon-discount').textContent = '😊';
+    document.getElementById('coupon-desc').textContent = '';
+    // Banner explicativo
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:#DBEAFE;border:1.5px solid #3B82F6;border-radius:12px;padding:16px 18px;text-align:center;font-size:14px;color:#1E3A5F;margin:12px 0 18px;line-height:1.7;';
+    banner.innerHTML = '✅ <strong>Obrigado pela sua avaliação!</strong><br>Como você já ganhou um cupom em uma visita anterior,<br>desta vez seu feedback foi registrado sem gerar novo cupom.<br><br>🍺 <em>Volte sempre — cada visita conta!</em>';
+    document.querySelector('.coupon-header').insertAdjacentElement('afterend', banner);
+    return;
+  }
+
+  // 5) Primeira vez: salvar cupom no localStorage para recuperar se fechar o app
   localStorage.setItem('nps_dias_submitted', JSON.stringify({
     code, validity, discount: '10%', ts: now.toISOString()
   }));
 
-  // 4) Show coupon
+  // 6) Show coupon
   setTimeout(() => {
     document.getElementById('form-screen').style.display = 'none';
     document.getElementById('coupon-screen').style.display = 'block';

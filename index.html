@@ -817,7 +817,9 @@ async function submitForm() {
   let isFirstTime = true;
   let checkData   = {};
   try {
-    const checkParams = new URLSearchParams({ action: 'check', contato: contato, ...((IS_TEST_MODE || FORCE_FORA_HORA) && { test_key: TEST_KEY }) });
+    // Captura o nome preenchido até agora para verificação dupla
+    const nomeParaCheck = (document.getElementById('nome') || {}).value || '';
+    const checkParams = new URLSearchParams({ action: 'check', contato: contato, nome: nomeParaCheck, ...((IS_TEST_MODE || FORCE_FORA_HORA) && { test_key: TEST_KEY }) });
     const resp = await fetch(SCRIPT_URL + '?' + checkParams.toString());
     const json = await resp.json();
     checkData   = json;
